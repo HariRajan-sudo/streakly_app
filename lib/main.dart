@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'screens/auth/splash_screen.dart';
@@ -6,6 +7,7 @@ import 'providers/auth_provider.dart';
 import 'providers/habit_provider.dart';
 import 'providers/note_provider.dart';
 import 'providers/theme_provider.dart';
+import 'services/admob_service.dart';
 import 'services/supabase_service.dart';
 
 void main() async {
@@ -13,6 +15,7 @@ void main() async {
   
   // Initialize Supabase
   await SupabaseService.initialize();
+  await MobileAds.instance.initialize();
   
   // Handle Flutter framework errors gracefully
   FlutterError.onError = (FlutterErrorDetails details) {
@@ -24,16 +27,30 @@ void main() async {
     FlutterError.presentError(details);
   };
   
-  runApp(const StreaklyApp());
+  runApp(StreaklyApp());
 }
 
-class StreaklyApp extends StatelessWidget {
+class StreaklyApp extends StatefulWidget {
   const StreaklyApp({super.key});
+
+  @override
+  State<StreaklyApp> createState() => _StreaklyAppState();
+}
+
+class _StreaklyAppState extends State<StreaklyApp> {
+  final AdmobService _admobService = AdmobService();
+
+  @override
+  void initState() {
+    super.initState();
+    _admobService.loadInterstitialAd();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        Provider.value(value: _admobService),
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => HabitProvider()),
         ChangeNotifierProvider(create: (_) => NoteProvider()),
@@ -78,7 +95,7 @@ class StreaklyApp extends StatelessWidget {
             ),
           ),
         ),
-        home: const SplashScreen(),
+        home: SplashScreen(),
       ),
     );
   }

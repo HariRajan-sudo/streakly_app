@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:share_plus/share_plus.dart'; // This is still needed for sharing
 import 'package:url_launcher/url_launcher.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/habit_provider.dart';
@@ -355,6 +357,23 @@ class ProfileScreen extends StatelessWidget {
             ),
           ],
         ),
+         const SizedBox(height: 16),
+        // Modified "Share App" Menu Item
+        _buildMenuCard(
+          context,
+          [
+            _buildMenuItem(
+              context,
+              title: 'Share App',
+              subtitle: 'Invite friends to join Streakly',
+              icon: Icons.share, // Changed icon
+              iconColor: Colors.lightGreen,
+              onTap: () {
+                _showShareDialog(context); // Changed method name for clarity
+              },
+            ),
+          ],
+        ),
         const SizedBox(height: 16),
         _buildMenuCard(
           context,
@@ -509,6 +528,65 @@ class ProfileScreen extends StatelessWidget {
             trailing ?? Icon(Icons.chevron_right, color: theme.colorScheme.onSurface.withOpacity(0.4)),
           ],
         ),
+      ),
+    );
+  }
+
+  // MODIFIED DIALOG FOR SHARING THE APP
+  void _showShareDialog(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.share, color: Colors.lightGreen),
+            const SizedBox(width: 8),
+            const Text('Share Streakly'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            const Icon(Icons.local_fire_department, color: Colors.orange, size: 40),
+            const SizedBox(height: 16),
+            Text(
+              'Enjoying Streakly? Share it with your friends and help them build great habits too!',
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+            ),
+          ],
+        ),
+        actionsAlignment: MainAxisAlignment.center,
+        actionsPadding: const EdgeInsets.only(bottom: 20, left: 24, right: 24),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              icon: const Icon(Icons.link),
+              label: const Text('Share App Link'),
+              onPressed: () {
+                // IMPORTANT: Replace with your actual package name
+                const appPackageName = 'your.package.name';
+                const appLink = 'https://play.google.com/store/apps/details?id=$appPackageName';
+                
+                final shareText = 'Check out Streakly, a great app for building habits! You can download it here: $appLink';
+                Share.share(shareText);
+              },
+              style: FilledButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

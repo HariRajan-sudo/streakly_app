@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
+import '../../services/admob_service.dart';
 import '../main/main_navigation.dart';
 import '../../services/navigation_service.dart';
 import '../main_navigation_screen.dart';
@@ -55,6 +56,7 @@ class _SplashScreenState extends State<SplashScreen>
     
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final admobService = Provider.of<AdmobService>(context, listen: false);
       
       // Initialize saved view mode preference
       await NavigationService.initializeViewMode();
@@ -63,6 +65,10 @@ class _SplashScreenState extends State<SplashScreen>
       await Future.delayed(const Duration(milliseconds: 500));
       
       if (!mounted) return;
+
+      admobService.loadInterstitialAd();
+      await Future.delayed(const Duration(seconds: 2)); // Give ad time to load
+      admobService.showInterstitialAd();
       
       if (authProvider.isAuthenticated) {
         if (NavigationService.isGridViewMode) {

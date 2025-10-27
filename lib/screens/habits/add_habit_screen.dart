@@ -1,9 +1,12 @@
+// lib/screens/habits/add_habit_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../providers/habit_provider.dart';
 import '../../models/habit.dart';
 import '../../widgets/modern_button.dart';
+import '../../widgets/review_dialog.dart'; // MODIFIED: Import the new dialog
 
 class AddHabitScreen extends StatefulWidget {
   final Habit? habitToEdit;
@@ -175,10 +178,12 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     super.dispose();
   }
 
+  // MODIFIED: This entire function has new logic at the end.
   Future<void> _saveHabit() async {
     if (!_formKey.currentState!.validate()) return;
 
     final habitProvider = Provider.of<HabitProvider>(context, listen: false);
+    final isEditing = widget.habitToEdit != null;
 
     final habit = Habit(
       id: widget.habitToEdit?.id ?? _uuid.v4(),
@@ -196,18 +201,40 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       dailyCompletions: widget.habitToEdit?.dailyCompletions ?? {},
     );
 
-    if (widget.habitToEdit != null) {
+    if (isEditing) {
       await habitProvider.updateHabit(habit.id, habit);
     } else {
       await habitProvider.addHabit(habit);
     }
     
-    // Force refresh habits list
+    // Force refresh habits list to get the updated count
     await habitProvider.loadHabits();
-    
-    if (mounted) {
-      Navigator.of(context).pop();
+
+    // After saving, check if we need to show the review dialog.
+    // This triggers only when CREATING a new habit, and the total becomes 2.
+    if (!isEditing && habitProvider.activeHabits.length == 2) {
+      if (mounted) {
+        // Pop the AddHabitScreen first
+        Navigator.of(context).pop();
+        // Then show the review dialog on top of the previous screen
+        _showReviewDialog(context);
+      }
+    } else {
+      // Original behavior: just pop the screen
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
     }
+  }
+
+  // MODIFIED: Added this helper function to show the dialog
+  void _showReviewDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      // Prevent dismissing by tapping outside
+      barrierDismissible: false,
+      builder: (context) => const ReviewDialog(),
+    );
   }
 
   @override
@@ -307,7 +334,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
+            border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
           ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 24), // Added more bottom padding
@@ -329,19 +356,19 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.18)
+                          ? Theme.of(context).colorScheme.primary.withOpacity(0.18)
                           : Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
                             ? Theme.of(context).colorScheme.primary
-                            : Colors.white.withValues(alpha: 0.06),
+                            : Colors.white.withOpacity(0.06),
                         width: isSelected ? 2 : 1,
                       ),
                       boxShadow: isSelected
                           ? [
                               BoxShadow(
-                                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.35),
+                                color: Theme.of(context).colorScheme.primary.withOpacity(0.35),
                                 blurRadius: 16,
                                 offset: const Offset(0, 8),
                               ),
@@ -351,7 +378,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     child: Container(
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.25)
+                            ? Theme.of(context).colorScheme.primary.withOpacity(0.25)
                             : Theme.of(context).colorScheme.surfaceContainerHigh,
                         borderRadius: BorderRadius.circular(10),
                       ),
@@ -360,7 +387,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                         size: 24,
                         color: isSelected
                             ? Colors.white
-                            : Colors.white.withValues(alpha: 0.7),
+                            : Colors.white.withOpacity(0.7),
                       ),
                     ),
                   ),
@@ -390,7 +417,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
+            border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
           ),
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 24), // Added more bottom padding
@@ -412,13 +439,13 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     padding: const EdgeInsets.all(6),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.2)
+                          ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
                           : Theme.of(context).colorScheme.surfaceContainerHighest,
                       borderRadius: BorderRadius.circular(14),
                       border: Border.all(
                         color: isSelected
                             ? Theme.of(context).colorScheme.primary
-                            : Colors.white.withValues(alpha: 0.06),
+                            : Colors.white.withOpacity(0.06),
                         width: isSelected ? 2 : 1,
                       ),
                     ),
@@ -462,7 +489,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
           decoration: BoxDecoration(
             color: Theme.of(context).cardColor,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
+            border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
           ),
           child: Row(
             children: HabitType.values.map((habitType) {
@@ -482,19 +509,19 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? (isBuild ? Colors.green.withValues(alpha: 0.2) : Colors.red.withValues(alpha: 0.2))
+                            ? (isBuild ? Colors.green.withOpacity(0.2) : Colors.red.withOpacity(0.2))
                             : Theme.of(context).colorScheme.surfaceContainerHighest,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
                               ? (isBuild ? Colors.green : Colors.red)
-                              : Colors.white.withValues(alpha: 0.06),
+                              : Colors.white.withOpacity(0.06),
                           width: isSelected ? 2 : 1,
                         ),
                         boxShadow: isSelected
                             ? [
                                 BoxShadow(
-                                  color: (isBuild ? Colors.green : Colors.red).withValues(alpha: 0.25),
+                                  color: (isBuild ? Colors.green : Colors.red).withOpacity(0.25),
                                   blurRadius: 14,
                                   offset: const Offset(0, 6),
                                 ),
@@ -507,7 +534,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                             isBuild ? Icons.trending_up : Icons.trending_down,
                             color: isSelected
                                 ? Colors.white
-                                : Colors.white.withValues(alpha: 0.7),
+                                : Colors.white.withOpacity(0.7),
                             size: 24,
                           ),
                           const SizedBox(height: 8),
@@ -517,7 +544,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                   color: isSelected
                                       ? Colors.white
-                                      : Colors.white.withValues(alpha: 0.7),
+                                      : Colors.white.withOpacity(0.7),
                                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                                 ),
                           ),
@@ -527,8 +554,8 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                             textAlign: TextAlign.center,
                             style: Theme.of(context).textTheme.bodySmall?.copyWith(
                                   color: isSelected
-                                      ? Colors.white.withValues(alpha: 0.8)
-                                      : Colors.white.withValues(alpha: 0.5),
+                                      ? Colors.white.withOpacity(0.8)
+                                      : Colors.white.withOpacity(0.5),
                                 ),
                           ),
                         ],
@@ -652,7 +679,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Center(
@@ -699,7 +726,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
+        border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -708,7 +735,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
             label,
             style: theme.textTheme.titleSmall?.copyWith(
               fontWeight: FontWeight.w600,
-              color: Colors.white.withValues(alpha: 0.85),
+              color: Colors.white.withOpacity(0.85),
             ),
           ),
           const SizedBox(height: 10),
@@ -716,7 +743,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
             decoration: BoxDecoration(
               color: Theme.of(context).colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2)),
+              border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
             ),
             child: TextFormField(
               controller: controller,
@@ -728,7 +755,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
               decoration: InputDecoration(
                 hintText: hint,
                 hintStyle: theme.textTheme.bodyMedium?.copyWith(
-                  color: Colors.white.withValues(alpha: 0.5),
+                  color: Colors.white.withOpacity(0.5),
                 ),
                 border: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(

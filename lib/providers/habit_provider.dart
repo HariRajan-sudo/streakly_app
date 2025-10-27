@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:in_app_review/in_app_review.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:uuid/uuid.dart';
 import '../models/habit.dart';
 import '../widgets/congratulations_popup.dart';
@@ -145,6 +147,10 @@ class HabitProvider with ChangeNotifier {
       final createdHabit = await SupabaseService.instance.createHabit(habit);
       _habits.add(createdHabit);
       print('Habit added successfully: ${createdHabit.id}'); // Debug print
+
+      // Check for in-app review
+      _requestReview();
+
     } catch (e) {
       _errorMessage = 'Failed to add habit: $e';
       print('Error adding habit: $e'); // Debug print
@@ -309,6 +315,20 @@ class HabitProvider with ChangeNotifier {
         completedHabits: completedTodayCount,
       ),
     );
+  }
+
+  Future<void> _requestReview() async {
+    final prefs = await SharedPreferences.getInstance();
+    int habitCreationCount = prefs.getInt('habit_creation_count') ?? 0;
+    habitCreationCount++;
+    await prefs.setInt('habit_creation_count', habitCreationCount);
+
+    if (habitCreationCount == 2) {
+      final InAppReview inAppReview = InAppReview.instance;
+      if (await inAppReview.isAvailable()) {
+        inAppReview.requestReview();
+      }
+    }
   }
   
   String _getDateKey(DateTime date) {
