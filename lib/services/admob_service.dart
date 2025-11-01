@@ -7,7 +7,17 @@ class AdmobService {
 
   InterstitialAd? _interstitialAd;
 
-  void loadInterstitialAd() {
+  void loadInterstitialAd({bool isPremium = false}) {
+    if (isPremium) {
+      if (_interstitialAd != null) {
+        _interstitialAd!.dispose();
+        _interstitialAd = null;
+      }
+      return;
+    }
+
+    if (_interstitialAd != null) return;
+
     print("AdmobService: Loading interstitial ad.");
     InterstitialAd.load(
       adUnitId: interstitialAdUnitId,
@@ -25,26 +35,33 @@ class AdmobService {
     );
   }
 
-  void showInterstitialAd() {
-      if (_interstitialAd != null) {
-        print("AdmobService: Showing interstitial ad.");
-        _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
-          onAdDismissedFullScreenContent: (ad) {
-            print("AdmobService: Interstitial ad dismissed.");
-            ad.dispose();
-            loadInterstitialAd();
-          },
-          onAdFailedToShowFullScreenContent: (ad, err) {
-            print("AdmobService: Interstitial ad failed to show: $err");
-            ad.dispose();
-            loadInterstitialAd();
-          },
-        );
-        _interstitialAd!.show();
-        _interstitialAd = null;
-      } else {
-        print("AdmobService: Interstitial ad not ready.");
-        loadInterstitialAd();
-      }
+  void showInterstitialAd({bool isPremium = false}) {
+    if (isPremium) {
+      print("AdmobService: Premium user, not showing ad.");
+      return;
     }
+
+    if (_interstitialAd != null) {
+      print("AdmobService: Showing interstitial ad.");
+      _interstitialAd!.fullScreenContentCallback = FullScreenContentCallback(
+        onAdDismissedFullScreenContent: (ad) {
+          print("AdmobService: Interstitial ad dismissed.");
+          ad.dispose();
+          _interstitialAd = null;
+          loadInterstitialAd(); // Pre-load next ad
+        },
+        onAdFailedToShowFullScreenContent: (ad, err) {
+          print("AdmobService: Interstitial ad failed to show: $err");
+          ad.dispose();
+          _interstitialAd = null;
+          loadInterstitialAd(); // Pre-load next ad
+        },
+      );
+      _interstitialAd!.show();
+      _interstitialAd = null;
+    } else {
+      print("AdmobService: Interstitial ad not ready.");
+      loadInterstitialAd(); // Load an ad to be ready for the next time.
+    }
+  }
 }

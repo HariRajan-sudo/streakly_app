@@ -3,10 +3,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:timezone/timezone.dart' as tz;
 import '../../providers/habit_provider.dart';
 import '../../models/habit.dart';
 import '../../widgets/modern_button.dart';
-import '../../widgets/review_dialog.dart'; // MODIFIED: Import the new dialog
+import '../../widgets/review_dialog.dart';
+import '../../services/notification_service.dart';
+import '../../providers/auth_provider.dart'; // Import AuthProvider
 
 class AddHabitScreen extends StatefulWidget {
   final Habit? habitToEdit;
@@ -29,7 +32,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   TimeOfDay? _reminderTime;
   int _remindersPerDay = 1;
   final List<IconData> _availableIcons = [
-    // Health & Fitness
     Icons.fitness_center,
     Icons.directions_run,
     Icons.directions_walk,
@@ -40,8 +42,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     Icons.sports_soccer,
     Icons.self_improvement,
     Icons.spa,
-    
-    // Food & Drink
     Icons.local_drink,
     Icons.restaurant,
     Icons.local_cafe,
@@ -50,8 +50,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     Icons.dinner_dining,
     Icons.local_pizza,
     Icons.cake,
-    
-    // Learning & Work
     Icons.book,
     Icons.school,
     Icons.work,
@@ -61,8 +59,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     Icons.calculate,
     Icons.language,
     Icons.psychology,
-    
-    // Creative & Hobbies
     Icons.brush,
     Icons.music_note,
     Icons.camera_alt,
@@ -71,8 +67,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     Icons.piano,
     Icons.mic,
     Icons.theater_comedy,
-    
-    // Daily Life
     Icons.bed,
     Icons.alarm,
     Icons.shower,
@@ -81,8 +75,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     Icons.shopping_cart,
     Icons.car_repair,
     Icons.home_repair_service,
-    
-    // Wellness & Mental Health
     Icons.favorite,
     Icons.favorite_border,
     Icons.mood,
@@ -91,16 +83,12 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     Icons.nature,
     Icons.wb_sunny,
     Icons.nights_stay,
-    
-    // Social & Family
     Icons.family_restroom,
     Icons.people,
     Icons.phone,
     Icons.video_call,
     Icons.chat,
     Icons.volunteer_activism,
-    
-    // Finance & Goals
     Icons.savings,
     Icons.account_balance_wallet,
     Icons.trending_up,
@@ -112,44 +100,37 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
   ];
 
   final List<Color> _availableColors = [
-    // Primary Colors
     Colors.blue,
     Colors.green,
     Colors.red,
     Colors.orange,
     Colors.purple,
     Colors.pink,
-    
-    // Secondary Colors
     Colors.teal,
     Colors.indigo,
     Colors.cyan,
     Colors.amber,
     Colors.lime,
     Colors.deepOrange,
-    
-    // Material Colors
     Colors.blueGrey,
     Colors.brown,
     Colors.grey,
-    
-    // Custom Colors
-    const Color(0xFF6B46C1), // Dark Violet
-    const Color(0xFF10B981), // Emerald
-    const Color(0xFFF59E0B), // Yellow
-    const Color(0xFFEF4444), // Rose
-    const Color(0xFF8B5CF6), // Violet
-    const Color(0xFF06B6D4), // Sky Blue
-    const Color(0xFFEC4899), // Hot Pink
-    const Color(0xFF84CC16), // Lime Green
-    const Color(0xFFF97316), // Orange
-    const Color(0xFF3B82F6), // Blue
-    const Color(0xFF14B8A6), // Teal
-    const Color(0xFFA855F7), // Purple
-    const Color(0xFFE11D48), // Red
-    const Color(0xFF22C55E), // Green
-    const Color(0xFF64748B), // Slate
-    const Color(0xFF78716C), // Stone
+    const Color(0xFF6B46C1),
+    const Color(0xFF10B981),
+    const Color(0xFFF59E0B),
+    const Color(0xFFEF4444),
+    const Color(0xFF8B5CF6),
+    const Color(0xFF06B6D4),
+    const Color(0xFFEC4899),
+    const Color(0xFF84CC16),
+    const Color(0xFFF97316),
+    const Color(0xFF3B82F6),
+    const Color(0xFF14B8A6),
+    const Color(0xFFA855F7),
+    const Color(0xFFE11D48),
+    const Color(0xFF22C55E),
+    const Color(0xFF64748B),
+    const Color(0xFF78716C),
   ];
 
   @override
@@ -178,15 +159,39 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
     super.dispose();
   }
 
-  // MODIFIED: This entire function has new logic at the end.
   Future<void> _saveHabit() async {
     if (!_formKey.currentState!.validate()) return;
 
     final habitProvider = Provider.of<HabitProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false); // Get AuthProvider
+    final notificationService = NotificationService();
     final isEditing = widget.habitToEdit != null;
+    final habitId = widget.habitToEdit?.id ?? _uuid.v4();
+    final notificationId = habitId.hashCode;
+
+    if (_reminderTime != null) {
+      final now = tz.TZDateTime.now(tz.local);
+      final scheduledDate = tz.TZDateTime(
+        tz.local,
+        now.year,
+        now.month,
+        now.day,
+        _reminderTime!.hour,
+        _reminderTime!.minute,
+      );
+
+      notificationService.scheduleDailyNotification(
+        notificationId,
+        _nameController.text.trim(),
+        'Time to complete your habit: ${_nameController.text.trim()}',
+        scheduledDate,
+      );
+    } else {
+      notificationService.cancelNotification(notificationId);
+    }
 
     final habit = Habit(
-      id: widget.habitToEdit?.id ?? _uuid.v4(),
+      id: habitId,
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim(),
       icon: _selectedIcon,
@@ -201,37 +206,31 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       dailyCompletions: widget.habitToEdit?.dailyCompletions ?? {},
     );
 
+    final isPremium = authProvider.currentUser?.premium ?? false; // Check premium status
+
     if (isEditing) {
       await habitProvider.updateHabit(habit.id, habit);
     } else {
-      await habitProvider.addHabit(habit);
+      await habitProvider.addHabit(habit, isPremium: isPremium); // Pass premium status
     }
-    
-    // Force refresh habits list to get the updated count
+
     await habitProvider.loadHabits();
 
-    // After saving, check if we need to show the review dialog.
-    // This triggers only when CREATING a new habit, and the total becomes 2.
     if (!isEditing && habitProvider.activeHabits.length == 2) {
       if (mounted) {
-        // Pop the AddHabitScreen first
         Navigator.of(context).pop();
-        // Then show the review dialog on top of the previous screen
         _showReviewDialog(context);
       }
     } else {
-      // Original behavior: just pop the screen
       if (mounted) {
         Navigator.of(context).pop();
       }
     }
   }
 
-  // MODIFIED: Added this helper function to show the dialog
   void _showReviewDialog(BuildContext context) {
     showDialog(
       context: context,
-      // Prevent dismissing by tapping outside
       barrierDismissible: false,
       builder: (context) => const ReviewDialog(),
     );
@@ -337,7 +336,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
             border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
           ),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24), // Added more bottom padding
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
             child: Wrap(
               spacing: 10,
               runSpacing: 10,
@@ -420,7 +419,7 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
             border: Border.all(color: Theme.of(context).colorScheme.outline.withOpacity(0.2)),
           ),
           child: SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24), // Added more bottom padding
+            padding: const EdgeInsets.fromLTRB(12, 12, 12, 24),
             child: Wrap(
               spacing: 10,
               runSpacing: 10,
@@ -570,7 +569,6 @@ class _AddHabitScreenState extends State<AddHabitScreen> {
       ],
     );
   }
-
 
   Widget _buildReminderSection() {
     return Column(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:lottie/lottie.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/admob_service.dart';
 import '../main/main_navigation.dart';
@@ -104,7 +105,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).colorScheme.primary,
+      backgroundColor: Colors.black,
       body: Center(
         child: AnimatedBuilder(
           animation: _animationController,
@@ -116,25 +117,10 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Container(
-                      width: 120,
-                      height: 120,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(30),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 20,
-                            offset: const Offset(0, 10),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(
-                        Icons.local_fire_department,
-                        size: 60,
-                        color: Color(0xFF6366F1),
-                      ),
+                    Lottie.asset(
+                      'assets/animations/Flame animation(1).json',
+                      width: 150,
+                      height: 150,
                     ),
                     const SizedBox(height: 24),
                     Text(

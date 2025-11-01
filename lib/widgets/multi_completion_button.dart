@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/habit.dart';
 import '../providers/habit_provider.dart';
+import '../providers/auth_provider.dart'; // Import AuthProvider
 
 class MultiCompletionButton extends StatelessWidget {
   final Habit habit;
@@ -15,6 +16,9 @@ class MultiCompletionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isPremium = authProvider.currentUser?.premium ?? false;
+
     return Consumer<HabitProvider>(
       builder: (context, habitProvider, child) {
         final currentCount = habit.getTodayCompletionCount();
@@ -25,7 +29,7 @@ class MultiCompletionButton extends StatelessWidget {
           onTap: isFullyCompleted 
               ? null // Disable tap when fully completed
               : () {
-                  habitProvider.toggleHabitCompletion(habit.id, context);
+                  habitProvider.toggleHabitCompletion(habit.id, context, isPremium);
                 },
           child: Opacity(
             opacity: isFullyCompleted ? 0.7 : 1.0, // Slightly dim when completed

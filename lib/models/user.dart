@@ -6,7 +6,8 @@ class AppUser {
   final DateTime createdAt;
   final DateTime? updatedAt;
   final Map<String, dynamic>? preferences;
-  
+  final bool premium;
+
   AppUser({
     required this.id,
     required this.email,
@@ -15,8 +16,11 @@ class AppUser {
     required this.createdAt,
     this.updatedAt,
     this.preferences,
+    required this.premium,
   });
-  
+
+  bool get isPremium => premium;
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -26,9 +30,10 @@ class AppUser {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
       'preferences': preferences,
+      'premium': premium,
     };
   }
-  
+
   factory AppUser.fromJson(Map<String, dynamic> json) {
     return AppUser(
       id: json['id'],
@@ -36,13 +41,14 @@ class AppUser {
       name: json['name'],
       avatarUrl: json['avatar_url'] as String?,
       createdAt: DateTime.parse(json['created_at']),
-      updatedAt: json['updated_at'] != null 
+      updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'])
           : null,
       preferences: json['preferences'],
+      premium: json['premium'] ?? false,
     );
   }
-  
+
   AppUser copyWith({
     String? id,
     String? email,
@@ -51,6 +57,7 @@ class AppUser {
     DateTime? createdAt,
     DateTime? updatedAt,
     Map<String, dynamic>? preferences,
+    bool? premium,
   }) {
     return AppUser(
       id: id ?? this.id,
@@ -60,6 +67,7 @@ class AppUser {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       preferences: preferences ?? this.preferences,
+      premium: premium ?? this.premium,
     );
   }
 }

@@ -9,14 +9,20 @@ import 'providers/note_provider.dart';
 import 'providers/theme_provider.dart';
 import 'services/admob_service.dart';
 import 'services/supabase_service.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Supabase
   await SupabaseService.initialize();
   await MobileAds.instance.initialize();
-  
+
+  // Initialize Notification Service
+  final NotificationService notificationService = NotificationService();
+  await notificationService.init();
+  await notificationService.requestPermissions();
+
   // Handle Flutter framework errors gracefully
   FlutterError.onError = (FlutterErrorDetails details) {
     // Log the error but don't crash the app for framework issues
@@ -26,7 +32,7 @@ void main() async {
     }
     FlutterError.presentError(details);
   };
-  
+
   runApp(StreaklyApp());
 }
 
@@ -43,7 +49,7 @@ class _StreaklyAppState extends State<StreaklyApp> {
   @override
   void initState() {
     super.initState();
-    _admobService.loadInterstitialAd();
+    // Ad loading is now handled by AuthProvider based on premium status
   }
 
   @override
@@ -51,8 +57,8 @@ class _StreaklyAppState extends State<StreaklyApp> {
     return MultiProvider(
       providers: [
         Provider.value(value: _admobService),
-        ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => HabitProvider()),
+        ChangeNotifierProvider(create: (_) => AuthProvider(_admobService)),
+        ChangeNotifierProvider(create: (_) => HabitProvider(_admobService)),
         ChangeNotifierProvider(create: (_) => NoteProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()),
       ],

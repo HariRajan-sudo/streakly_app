@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:timezone/timezone.dart' as tz;
+import '../services/notification_service.dart';
 import 'habits/habit_grid_screen.dart';
 import 'notes/notes_screen.dart';
 import 'habits/add_habit_screen.dart';
@@ -9,7 +11,7 @@ import '../services/navigation_service.dart';
 
 class MainNavigationScreen extends StatefulWidget {
   final int initialIndex;
-  
+
   const MainNavigationScreen({
     super.key,
     this.initialIndex = 0,
@@ -28,7 +30,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     super.initState();
     _currentIndex = widget.initialIndex;
     _pageController = PageController(initialPage: _currentIndex);
-    
+
     // Set grid view mode and current tab in NavigationService
     NavigationService.setGridViewMode(true);
     NavigationService.setCurrentTab(_currentIndex);

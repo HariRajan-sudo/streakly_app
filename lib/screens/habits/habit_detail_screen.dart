@@ -6,6 +6,7 @@ import '../../models/note.dart';
 import '../../providers/habit_provider.dart';
 import '../../providers/note_provider.dart';
 import '../../widgets/modern_button.dart';
+import '../../providers/auth_provider.dart';
 import 'add_habit_screen.dart';
 
 class HabitDetailScreen extends StatefulWidget {
@@ -363,41 +364,47 @@ class _HabitDetailScreenState extends State<HabitDetailScreen> {
   void _showDeleteDialog(Habit habit) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Delete Habit'),
-        content: Text('Are you sure you want to delete "${habit.name}"? This action cannot be undone.'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.all(2.0),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Flexible(
-                  child: ModernButton(
-                    text: 'Cancel',
-                    type: ModernButtonType.outline,
-                    onPressed: () => Navigator.of(context).pop(),
+      builder: (context) {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        final isPremium = authProvider.currentUser?.isPremium ?? false;
+
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Text('Delete Habit'),
+          content: Text('Are you sure you want to delete "${habit.name}"? This action cannot be undone.'),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.all(2.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Flexible(
+                    child: ModernButton(
+                      text: 'Cancel',
+                      type: ModernButtonType.outline,
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
                   ),
-                ),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: ModernButton(
-                    text: 'Delete',
-                    type: ModernButtonType.destructive,
-                    icon: Icons.delete_forever,
-                    onPressed: () {
-                      Provider.of<HabitProvider>(context, listen: false).deleteHabit(habit.id);
-                      Navigator.of(context).pop(); // Close dialog
-                      Navigator.of(context).pop(); // Close detail screen
-                    },
+                  const SizedBox(width: 6),
+                  Flexible(
+                    child: ModernButton(
+                      text: 'Delete',
+                      type: ModernButtonType.destructive,
+                      icon: Icons.delete_forever,
+                      onPressed: () {
+                        Provider.of<HabitProvider>(context, listen: false)
+                            .deleteHabit(habit.id, isPremium: isPremium);
+                        Navigator.of(context).pop(); // Close dialog
+                        Navigator.of(context).pop(); // Close detail screen
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
     );
   }
 }

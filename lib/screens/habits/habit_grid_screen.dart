@@ -9,6 +9,7 @@ import '../profile/profile_screen.dart';
 import '../../widgets/persistent_navigation_wrapper.dart';
 import '../../services/navigation_service.dart';
 import '../subscription/subscription_plans_screen.dart';
+import '../../providers/auth_provider.dart'; // Import AuthProvider
 
 class HabitGridScreen extends StatefulWidget {
   const HabitGridScreen({super.key});
@@ -21,7 +22,6 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
   @override
   void initState() {
     super.initState();
-    // Set grid view mode and ensure habits are loaded
     NavigationService.setGridViewMode(true);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Provider.of<HabitProvider>(context, listen: false).loadHabits();
@@ -41,7 +41,6 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
         automaticallyImplyLeading: false,
         title: Row(
           children: [
-            // App icon - plain icon with exact color and no background
             const Icon(
               Icons.local_fire_department,
               color: Color(0xFF4B0082),
@@ -192,7 +191,6 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
     );
   }
 
-  // 🔹 New Modern Habit Card UI
   Widget _buildHabitCard(Habit habit, ThemeData theme) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -209,6 +207,7 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
               ),
             );
           },
+          onLongPress: () => _showDeleteConfirmationDialog(habit), // Add long-press for delete
           child: Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
@@ -223,90 +222,85 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
                 ),
               ],
             ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header Row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-                  Row(
-                children: [
-                  Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF2C3145),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Icon(habit.icon, color: habit.color, size: 18),
-                  ),
-                  const SizedBox(width: 8),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        habit.name,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF2C3145),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Icon(habit.icon, color: habit.color, size: 18),
                         ),
-                      ),
-                      Row(
-                        children: [
-                          ShaderMask(
-                            shaderCallback: (Rect bounds) {
-                              return LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.orange.shade300, // Light orange at top
-                                  Colors.deepOrange.shade600, // Deep orange at bottom
-                                ],
-                              ).createShader(bounds);
-                            },
-                            child: const Icon(
-                              Icons.local_fire_department,
-                              color: Colors.white, // The gradient will be applied over this
-                              size: 16,
+                        const SizedBox(width: 8),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              habit.name,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: theme.colorScheme.onSurface,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${_calculateCurrentStreak(habit)} day streak',
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white, // Changed to white
-                              fontWeight: FontWeight.w600,
+                            Row(
+                              children: [
+                                ShaderMask(
+                                  shaderCallback: (Rect bounds) {
+                                    return LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
+                                      colors: [
+                                        Colors.orange.shade300,
+                                        Colors.deepOrange.shade600,
+                                      ],
+                                    ).createShader(bounds);
+                                  },
+                                  child: const Icon(
+                                    Icons.local_fire_department,
+                                    color: Colors.white,
+                                    size: 16,
+                                  ),
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${_calculateCurrentStreak(habit)} day streak',
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              MultiCompletionButton(habit: habit, size: 32),
-            ],
-          ),
-          const SizedBox(height: 10),
-
-          // 🔹 365 Day Grid
-          _buildYearGrid(habit, theme),
-        ],
-      ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    MultiCompletionButton(habit: habit, size: 32),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                _buildYearGrid(habit, theme),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  // 🔹 Modern 52x7 Scrollable Grid (365 days)
   Widget _buildYearGrid(Habit habit, ThemeData theme) {
-  const int rows = 7; // days
-  const int cols = 52; // weeks
-  const int totalCells = 364; // 52 * 7
-  const double cellSize = 10.0;
-  const double spacing = 2.0;
+    const int rows = 7;
+    const int cols = 52;
+    const double cellSize = 10.0;
+    const double spacing = 2.0;
 
     final now = DateTime.now();
     final startOfYear = DateTime(now.year, 1, 1);
@@ -314,13 +308,11 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
-        // Scrollable Grid
         SizedBox(
           height: rows * (cellSize + spacing),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            reverse: true, // Start from the right (most recent dates)
+            reverse: true,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: List.generate(cols, (week) {
@@ -330,7 +322,6 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
                     children: List.generate(rows, (dayOfWeek) {
                       final cellDate = startOfYear.add(Duration(days: (week * 7) + dayOfWeek));
 
-                      // Skip out-of-year overflow dates
                       if (cellDate.year > now.year) {
                         return SizedBox(width: cellSize, height: cellSize);
                       }
@@ -342,11 +333,11 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
 
                       Color cellColor;
                       if (isCompleted) {
-                        cellColor = habit.color; // Completed - full opacity habit color
+                        cellColor = habit.color;
                       } else if (cellDate.isAfter(now)) {
-                        cellColor = habit.color.withOpacity(0.15); // Future - light habit color
+                        cellColor = habit.color.withOpacity(0.15);
                       } else {
-                        cellColor = theme.colorScheme.onSurface.withOpacity(0.1); // Missed - light gray
+                        cellColor = theme.colorScheme.onSurface.withOpacity(0.1);
                       }
 
                       final isToday = cellDate.day == now.day &&
@@ -361,7 +352,7 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
                           height: cellSize,
                           decoration: BoxDecoration(
                             color: cellColor,
-              borderRadius: BorderRadius.circular(2),
+                            borderRadius: BorderRadius.circular(2),
                             border: isToday
                                 ? Border.all(color: Colors.orangeAccent, width: 1.2)
                                 : null,
@@ -380,14 +371,15 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
   }
 
   void _onGridCellTap(Habit habit, DateTime date) {
-    final provider = Provider.of<HabitProvider>(context, listen: false);
+    final habitProvider = Provider.of<HabitProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final tapped = DateTime(date.year, date.month, date.day);
 
-    // Allow toggling for today only
     if (tapped.isAtSameMomentAs(today)) {
-      provider.toggleHabitCompletion(habit.id, context);
+      final isPremium = authProvider.currentUser?.premium ?? false;
+      habitProvider.toggleHabitCompletion(habit.id, context, isPremium);
     }
   }
 
@@ -395,41 +387,66 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
     if (habit.completedDates.isEmpty) return 0;
 
     final sortedDates = habit.completedDates.toList()
-      ..sort((a, b) => b.compareTo(a));  // Sort in descending order
+      ..sort((a, b) => b.compareTo(a));
 
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
-    
+
     int streak = 0;
     DateTime? lastDate;
 
     for (var date in sortedDates) {
       final currentDate = DateTime(date.year, date.month, date.day);
-      
+
       if (lastDate == null) {
-        // First iteration
-        if (currentDate.isAfter(todayDate)) continue;  // Skip future dates
+        if (currentDate.isAfter(todayDate)) continue;
         lastDate = currentDate;
         streak = 1;
         continue;
       }
 
-      // Check if this date is consecutive with the last one
       final difference = lastDate.difference(currentDate).inDays;
       if (difference == 1) {
         streak++;
         lastDate = currentDate;
       } else {
-        break;  // Break the streak
+        break;
       }
     }
 
     return streak;
   }
 
+  void _showDeleteConfirmationDialog(Habit habit) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isPremium = authProvider.currentUser?.premium ?? false;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Habit'),
+        content: const Text('Are you sure you want to delete this habit?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () {
+              Provider.of<HabitProvider>(context, listen: false)
+                  .deleteHabit(habit.id, isPremium: isPremium);
+              Navigator.of(context).pop();
+            },
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showViewOptionsBottomSheet(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -445,7 +462,6 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Handle bar
               Container(
                 width: 40,
                 height: 4,
@@ -455,8 +471,6 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              
-              // Title
               Text(
                 'Choose View',
                 style: theme.textTheme.titleLarge?.copyWith(
@@ -464,8 +478,6 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              
-              // List View Option
               ListTile(
                 leading: Container(
                   width: 40,
@@ -486,8 +498,8 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
                   color: !NavigationService.isGridViewMode ? theme.colorScheme.primary : null,
                 ),
                 onTap: () async {
-                  Navigator.pop(context); // Close bottom sheet
-                  await NavigationService.setGridViewMode(false); // Save preference
+                  Navigator.pop(context);
+                  await NavigationService.setGridViewMode(false);
                   if (context.mounted) {
                     Navigator.of(context).pushReplacement(
                       MaterialPageRoute(builder: (_) => const MainNavigation()),
@@ -495,8 +507,6 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
                   }
                 },
               ),
-              
-              // Grid View Option
               ListTile(
                 leading: Container(
                   width: 40,
@@ -517,11 +527,9 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
                   color: NavigationService.isGridViewMode ? theme.colorScheme.primary : null,
                 ),
                 onTap: () {
-                  Navigator.pop(context); // Close bottom sheet
-                  // Already on grid view, no navigation needed
+                  Navigator.pop(context);
                 },
               ),
-              
               const SizedBox(height: 20),
             ],
           ),
@@ -529,5 +537,4 @@ class _HabitGridScreenState extends State<HabitGridScreen> {
       },
     );
   }
-
 }

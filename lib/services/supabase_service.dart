@@ -3,8 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../config/supabase_config.dart';
 import '../models/habit.dart';
 import '../models/user.dart';
-import 'mock_auth_service.dart';
-import 'mock_habit_service.dart';
 
 class SupabaseService {
   static SupabaseService? _instance;
@@ -45,16 +43,12 @@ class SupabaseService {
         );
         print('✅ Supabase initialized successfully!');
       } else {
-        print('⚠️  Supabase not configured - using MOCK/DEMO mode');
-        // Initialize with dummy values for mock mode
-        await Supabase.initialize(
-          url: 'https://xvwzpoazmxkqosrdewyv.supabase.co', // dummy URL
-          anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh2d3pwb2F6bXhrcW9zcmRld3l2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE2OTk5NjI0MDAsImV4cCI6MjAxNTUzODQwMH0.dummy', // dummy key
-        );
+        print('⚠️  Supabase not configured - Please provide valid credentials');
+        throw Exception('Supabase not configured');
       }
     } catch (e) {
       print('❌ Supabase initialization failed: $e');
-      print('⚠️  Falling back to mock service');
+      rethrow;
     }
   }
   
@@ -65,16 +59,6 @@ class SupabaseService {
     required String name,
   }) async {
     print('📝 SignUp Request for: $email');
-    
-    // Use mock service if Supabase is not configured
-    if (!_isSupabaseConfigured) {
-      print('   ⚠️  Using MOCK service for signup');
-      return await MockAuthService.mockSignUp(
-        email: email,
-        password: password,
-        name: name,
-      );
-    }
     
     print('   ✅ Using REAL Supabase for signup');
     final response = await client.auth.signUp(
@@ -96,15 +80,6 @@ class SupabaseService {
   }) async {
     print('🔐 SignIn Request for: $email');
     
-    // Use mock service if Supabase is not configured
-    if (!_isSupabaseConfigured) {
-      print('   ⚠️  Using MOCK service for signin');
-      return await MockAuthService.mockSignIn(
-        email: email,
-        password: password,
-      );
-    }
-    
     print('   ✅ Using REAL Supabase for signin');
     
     return await client.auth.signInWithPassword(
@@ -124,11 +99,6 @@ class SupabaseService {
   // User Profile Methods
   Future<AppUser?> getUserProfile([String? userId]) async {
     print('🔍 Fetching user profile...');
-    
-    if (!_isSupabaseConfigured) {
-      print('   ⚠️ Using mock service for user profile');
-      return await MockHabitService.getUserProfile(userId);
-    }
     
     final id = userId ?? currentUserId;
     if (id == null) return null;
@@ -154,10 +124,6 @@ class SupabaseService {
     required String userId,
     required Map<String, dynamic> data,
   }) async {
-    if (!_isSupabaseConfigured) {
-      return;
-    }
-    
     await client
         .from(SupabaseConfig.usersTable)
         .update(data)
@@ -167,12 +133,6 @@ class SupabaseService {
   // Habit Methods
   Future<List<Habit>> getUserHabits() async {
     print('📋 Fetching user habits...');
-    
-    if (!_isSupabaseConfigured) {
-      print('   ⚠️  Using MOCK habit service');
-      MockHabitService.initializeSampleData();
-      return await MockHabitService.getUserHabits();
-    }
     
     print('   ✅ Fetching from REAL Supabase');
     
@@ -189,11 +149,6 @@ class SupabaseService {
   
   Future<Habit> createHabit(Habit habit) async {
     print('➕ Creating habit: ${habit.name}');
-    
-    if (!_isSupabaseConfigured) {
-      print('   ⚠️  Using MOCK habit service');
-      return await MockHabitService.createHabit(habit);
-    }
     
     print('   ✅ Creating in REAL Supabase');
     
@@ -212,12 +167,6 @@ class SupabaseService {
   Future<void> updateHabit(Habit habit) async {
     print('✏️  Updating habit: ${habit.name}');
     
-    if (!_isSupabaseConfigured) {
-      print('   ⚠️  Using MOCK habit service');
-      await MockHabitService.updateHabit(habit);
-      return;
-    }
-    
     print('   ✅ Updating in REAL Supabase');
     
     final habitData = _habitToSupabaseJson(habit);
@@ -231,12 +180,6 @@ class SupabaseService {
   
   Future<void> deleteHabit(String habitId) async {
     print('🗑️  Deleting habit: $habitId');
-    
-    if (!_isSupabaseConfigured) {
-      print('   ⚠️  Using MOCK habit service');
-      await MockHabitService.deleteHabit(habitId);
-      return;
-    }
     
     print('   ✅ Deleting from REAL Supabase');
     
@@ -258,15 +201,6 @@ class SupabaseService {
     required DateTime completionDate,
     int count = 1,
   }) async {
-    if (!_isSupabaseConfigured) {
-      await MockHabitService.recordHabitCompletion(
-        habitId: habitId,
-        completionDate: completionDate,
-        count: count,
-      );
-      return;
-    }
-    
     final dateKey = _getDateKey(completionDate);
     
     // Check if completion already exists for this date
@@ -304,14 +238,6 @@ class SupabaseService {
     required String habitId,
     required DateTime completionDate,
   }) async {
-    if (!_isSupabaseConfigured) {
-      await MockHabitService.removeHabitCompletion(
-        habitId: habitId,
-        completionDate: completionDate,
-      );
-      return;
-    }
-    
     final dateKey = _getDateKey(completionDate);
     
     await client
@@ -407,11 +333,6 @@ class SupabaseService {
   Future<List<Map<String, dynamic>>> getUserNotes() async {
     print('📋 Fetching user notes...');
     
-    if (!_isSupabaseConfigured) {
-      print('   ⚠️  Using MOCK note service');
-      return [];
-    }
-    
     print('   ✅ Fetching from REAL Supabase');
     
     if (currentUserId == null) return [];
@@ -427,11 +348,6 @@ class SupabaseService {
   
   Future<Map<String, dynamic>> createNote(Map<String, dynamic> noteData) async {
     print('➕ Creating note: ${noteData['title']}');
-    
-    if (!_isSupabaseConfigured) {
-      print('   ⚠️  Using MOCK note service');
-      return noteData;
-    }
     
     print('   ✅ Creating in REAL Supabase');
     
@@ -449,11 +365,6 @@ class SupabaseService {
   Future<void> updateNote(String noteId, Map<String, dynamic> noteData) async {
     print('✏️  Updating note: $noteId');
     
-    if (!_isSupabaseConfigured) {
-      print('   ⚠️  Using MOCK note service');
-      return;
-    }
-    
     print('   ✅ Updating in REAL Supabase');
     
     noteData['updated_at'] = DateTime.now().toIso8601String();
@@ -467,11 +378,6 @@ class SupabaseService {
   Future<void> deleteNote(String noteId) async {
     print('🗑️  Deleting note: $noteId');
     
-    if (!_isSupabaseConfigured) {
-      print('   ⚠️  Using MOCK note service');
-      return;
-    }
-    
     print('   ✅ Deleting from REAL Supabase');
     
     await client
@@ -482,11 +388,6 @@ class SupabaseService {
   
   Future<List<Map<String, dynamic>>> getNotesForHabit(String habitId) async {
     print('📋 Fetching notes for habit: $habitId');
-    
-    if (!_isSupabaseConfigured) {
-      print('   ⚠️  Using MOCK note service');
-      return [];
-    }
     
     print('   ✅ Fetching from REAL Supabase');
     
